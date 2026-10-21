@@ -1,0 +1,40 @@
+.gradle/
+build/
+.idea/
+*.iml
+.DS_Store
+
+# Gradle
+out/
+
+# IntelliJ IDEA
+*.ipr
+*.iws
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# VS Code
+.vscode/
+settings.gradle
+
+# Logs
+*.log
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# macOS / Windows
+Thumbs.db
+Desktop.ini
+
+# Keep the Gradle wrapper tracked
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!gradlew
+!gradlew.bat
