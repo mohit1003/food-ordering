@@ -1,6 +1,8 @@
 package com.foodorder.service;
 
 import com.foodorder.model.*;
+import com.foodorder.pricing.DiscountStrategy;
+import com.foodorder.pricing.NoDiscountStrategy;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
@@ -22,8 +24,18 @@ public class OrderService {
     }
 
     public Order placeOrder(Cart cart) {
+        return placeOrder(cart, new NoDiscountStrategy());
+    }
+
+    public Order placeOrder(Cart cart, DiscountStrategy discountStrategy) {
         if (cart.isEmpty()) throw new IllegalArgumentException("Your cart is empty");
-        Order order = new Order(UUID.randomUUID(), cart.items(), Instant.now());
+        Objects.requireNonNull(discountStrategy, "Discount strategy is required");
+        BigDecimal subtotal = cart.total();
+        BigDecimal discount = discountStrategy.calculateDiscount(subtotal);
+        if (discount == null || discount.signum() < 0 || discount.compareTo(subtotal) > 0) {
+            throw new IllegalArgumentException("Discount strategy returned an invalid discount");
+        }
+        Order order = new Order(UUID.randomUUID(), cart.items(), Instant.now(), discount);
         orders.put(order.id(), order);
         cart.clear();
         return order;
