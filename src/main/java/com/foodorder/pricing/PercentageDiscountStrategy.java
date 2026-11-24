@@ -19,6 +19,9 @@ public class PercentageDiscountStrategy implements DiscountStrategy{
     }
     @Override
     public BigDecimal calculateDiscount(BigDecimal subtotal) {
+        if (subtotal == null || subtotal.signum() < 0) {
+            throw new IllegalArgumentException("Subtotal cannot be null or negative");
+        }
          return subtotal.multiply(percentage)
                 .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
     }

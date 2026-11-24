@@ -1,7 +1,12 @@
 package com.foodorder.cli;
 
 import com.foodorder.model.*;
+import com.foodorder.pricing.DiscountStrategy;
+import com.foodorder.pricing.FlatDiscountStrategy;
+import com.foodorder.pricing.NoDiscountStrategy;
+import com.foodorder.pricing.PercentageDiscountStrategy;
 import com.foodorder.service.OrderService;
+import java.math.BigDecimal;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -27,7 +32,7 @@ public class FoodOrderingCli {
                         printItems(cart.items());
                         System.out.printf("Total: INR %.2f%n", cart.total());
                     }
-                    case "4" -> printOrder(service.placeOrder(cart));
+                    case "4" -> printOrder(service.placeOrder(cart, selectDiscountStrategy()));
                     case "5" -> findOrder();
                     case "0" -> { return; }
                     default -> System.out.println("Choose an option from the menu.");
@@ -36,6 +41,24 @@ public class FoodOrderingCli {
                 System.out.println("Error: " + e.getMessage());
             }
         }
+    }
+
+    private DiscountStrategy selectDiscountStrategy() {
+        System.out.println("Discount: 0. None  1. Percentage  2. Flat amount");
+        System.out.print("> ");
+        String choice = input.nextLine().trim();
+        return switch (choice) {
+            case "0" -> new NoDiscountStrategy();
+            case "1" -> {
+                System.out.print("Percentage (0-100): ");
+                yield new PercentageDiscountStrategy(new BigDecimal(input.nextLine().trim()));
+            }
+            case "2" -> {
+                System.out.print("Discount amount (INR): ");
+                yield new FlatDiscountStrategy(new BigDecimal(input.nextLine().trim()));
+            }
+            default -> throw new IllegalArgumentException("Choose 0, 1, or 2 for the discount");
+        };
     }
 
     private void addItem() {
@@ -57,6 +80,8 @@ public class FoodOrderingCli {
         System.out.println("Order: " + order.id());
         System.out.println("Status: " + order.status());
         printItems(order.items());
+        System.out.printf("Subtotal: INR %.2f%n", order.subtotal());
+        System.out.printf("Discount: INR %.2f%n", order.discount());
         System.out.printf("Total: INR %.2f%n", order.total());
     }
 
