@@ -66,8 +66,22 @@ public class FoodOrderingCli {
         int id = Integer.parseInt(input.nextLine().trim());
         System.out.print("Quantity: ");
         int quantity = Integer.parseInt(input.nextLine().trim());
-        cart.add(service.findMenuItem(id), quantity);
+
+        PricedItem item = service.findMenuItem(id);
+        if (confirm("Add cheese for INR 20.00? (y/n): ")) {
+            item = new CheeseDecorator(item);
+        }
+        if (confirm("Add an extra patty for INR 50.00? (y/n): ")) {
+            item = new ExtraPattyDecorator(item);
+        }
+
+        cart.add(item, quantity);
         System.out.println("Added to cart.");
+    }
+
+    private boolean confirm(String prompt) {
+        System.out.print(prompt);
+        return input.nextLine().trim().equalsIgnoreCase("y");
     }
 
     private void findOrder() {

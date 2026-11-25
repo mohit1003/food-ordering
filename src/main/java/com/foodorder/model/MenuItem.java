@@ -3,7 +3,7 @@ package com.foodorder.model;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-public record MenuItem(int id, String name, BigDecimal price) {
+public record MenuItem(int id, String name, BigDecimal price) implements PricedItem{
     public MenuItem {
         Objects.requireNonNull(name);
         Objects.requireNonNull(price);

@@ -7,7 +7,7 @@ import java.util.List;
 public class Cart {
     private final List<CartItem> items = new ArrayList<>();
 
-    public void add(MenuItem item, int quantity) {
+    public void add(PricedItem item, int quantity) {
         items.add(new CartItem(item, quantity));
     }
 
