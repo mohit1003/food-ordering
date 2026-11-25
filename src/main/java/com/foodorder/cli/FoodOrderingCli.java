@@ -32,7 +32,7 @@ public class FoodOrderingCli {
                         printItems(cart.items());
                         System.out.printf("Total: INR %.2f%n", cart.total());
                     }
-                    case "4" -> printOrder(service.placeOrder(cart, selectDiscountStrategy()));
+                    case "4" -> printOrder(checkout());
                     case "5" -> findOrder();
                     case "0" -> { return; }
                     default -> System.out.println("Choose an option from the menu.");
@@ -59,6 +59,24 @@ public class FoodOrderingCli {
             }
             default -> throw new IllegalArgumentException("Choose 0, 1, or 2 for the discount");
         };
+    }
+
+    private Order checkout() {
+        if (cart.isEmpty()) {
+            throw new IllegalArgumentException("Your cart is empty");
+        }
+        DiscountStrategy discountStrategy = selectDiscountStrategy();
+        String customerName = readOptional("Customer name (optional): ");
+        String contactPerson = readOptional("Contact person or phone (optional): ");
+        String deliveryInstructions = readOptional("Delivery instructions (optional): ");
+        return service.placeOrder(cart, discountStrategy,
+                customerName, contactPerson, deliveryInstructions);
+    }
+
+    private String readOptional(String prompt) {
+        System.out.print(prompt);
+        String value = input.nextLine().trim();
+        return value.isEmpty() ? null : value;
     }
 
     private void addItem() {
@@ -93,6 +111,15 @@ public class FoodOrderingCli {
     private void printOrder(Order order) {
         System.out.println("Order: " + order.id());
         System.out.println("Status: " + order.status());
+        if (order.customerName() != null) {
+            System.out.println("Customer: " + order.customerName());
+        }
+        if (order.contactPerson() != null) {
+            System.out.println("Contact: " + order.contactPerson());
+        }
+        if (order.deliveryInstructions() != null) {
+            System.out.println("Delivery instructions: " + order.deliveryInstructions());
+        }
         printItems(order.items());
         System.out.printf("Subtotal: INR %.2f%n", order.subtotal());
         System.out.printf("Discount: INR %.2f%n", order.discount());

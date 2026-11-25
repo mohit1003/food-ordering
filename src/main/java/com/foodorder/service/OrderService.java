@@ -27,10 +27,16 @@ public class OrderService {
     }
 
     public Order placeOrder(Cart cart) {
-        return placeOrder(cart, new NoDiscountStrategy());
+        return placeOrder(cart, new NoDiscountStrategy(), null, null, null);
     }
 
     public Order placeOrder(Cart cart, DiscountStrategy discountStrategy) {
+        return placeOrder(cart, discountStrategy, null, null, null);
+    }
+
+    public Order placeOrder(Cart cart, DiscountStrategy discountStrategy,
+                            String customerName, String contactPerson,
+                            String deliveryInstructions) {
         if (cart.isEmpty()) throw new IllegalArgumentException("Your cart is empty");
         Objects.requireNonNull(discountStrategy, "Discount strategy is required");
         BigDecimal subtotal = cart.total();
@@ -38,7 +44,16 @@ public class OrderService {
         if (discount == null || discount.signum() < 0 || discount.compareTo(subtotal) > 0) {
             throw new IllegalArgumentException("Discount strategy returned an invalid discount");
         }
-        Order order = new Order(UUID.randomUUID(), cart.items(), Instant.now(), discount);
+        Order order = Order.builder()
+                .id(UUID.randomUUID())
+                .items(cart.items())
+                .createdAt(Instant.now())
+                .discount(discount)
+                .customerName(customerName)
+                .contactPerson(contactPerson)
+                .deliveryInstructions(deliveryInstructions)
+                .build();
+
         orders.put(order.id(), order);
         cart.clear();
         return order;

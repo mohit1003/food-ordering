@@ -25,4 +25,18 @@ class OrderServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.placeOrder(cart));
         assertThrows(IllegalArgumentException.class, () -> cart.add(service.findMenuItem(1), 0));
     }
+
+    @Test void checkoutStoresOptionalCustomerAndDeliveryDetails() {
+        var service = new OrderService();
+        var cart = new Cart();
+        cart.add(service.findMenuItem(1), 1);
+
+        var order = service.placeOrder(cart, new com.foodorder.pricing.NoDiscountStrategy(),
+                "Asha", "555-0100", "Leave at reception");
+
+        assertEquals("Asha", order.customerName());
+        assertEquals("555-0100", order.contactPerson());
+        assertEquals("Leave at reception", order.deliveryInstructions());
+        assertTrue(cart.isEmpty());
+    }
 }
