@@ -67,12 +67,12 @@ public class FoodOrderingCli {
         System.out.print("Quantity: ");
         int quantity = Integer.parseInt(input.nextLine().trim());
 
-        PricedItem item = service.findMenuItem(id);
-        if (confirm("Add cheese for INR 20.00? (y/n): ")) {
-            item = new CheeseDecorator(item);
-        }
-        if (confirm("Add an extra patty for INR 50.00? (y/n): ")) {
-            item = new ExtraPattyDecorator(item);
+        MenuItem menuItem = service.findMenuItem(id);
+        PricedItem item = menuItem;
+        for (MenuAddOn addOn : menuItem.availableAddOns()) {
+            if (confirm("Add " + addOn.label() + "? (y/n): ")) {
+                item = addOn.applyTo(item);
+            }
         }
 
         cart.add(item, quantity);

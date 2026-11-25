@@ -9,10 +9,13 @@ import java.util.*;
 
 public class OrderService {
     private final List<MenuItem> menu = List.of(
-            new MenuItem(1, "Burger", new BigDecimal("120.00")),
-            new MenuItem(2, "Pizza", new BigDecimal("250.00")),
-            new MenuItem(3, "Fries", new BigDecimal("80.00")),
-            new MenuItem(4, "Sandwich", new BigDecimal("100.00")),
+            new MenuItem(1, "Burger", new BigDecimal("120.00"),
+                    List.of(MenuAddOn.CHEESE, MenuAddOn.EXTRA_PATTY)),
+            new MenuItem(2, "Pizza", new BigDecimal("250.00"),
+                    List.of(MenuAddOn.CHEESE)),
+            new MenuItem(3, "Fries", new BigDecimal("80.00"), List.of(MenuAddOn.PERIPERI)),
+            new MenuItem(4, "Sandwich", new BigDecimal("100.00"),
+                    List.of(MenuAddOn.CHEESE)),
             new MenuItem(5, "Lemonade", new BigDecimal("50.00")));
     private final Map<UUID, Order> orders = new LinkedHashMap<>();
 
