@@ -1,21 +1,32 @@
 package com.foodorder.cli;
 
 import com.foodorder.model.*;
+import com.foodorder.payment.PaymentOption;
+import com.foodorder.payment.PaymentResult;
 import com.foodorder.pricing.DiscountStrategy;
 import com.foodorder.pricing.FlatDiscountStrategy;
 import com.foodorder.pricing.NoDiscountStrategy;
 import com.foodorder.pricing.PercentageDiscountStrategy;
 import com.foodorder.service.OrderService;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.UUID;
 
 public class FoodOrderingCli {
     private final OrderService service;
+    private final List<PaymentOption> paymentOptions;
     private final Cart cart = new Cart();
     private final Scanner input = new Scanner(System.in);
 
-    public FoodOrderingCli(OrderService service) { this.service = service; }
+    public FoodOrderingCli(OrderService service, List<PaymentOption> paymentOptions) {
+        this.service = Objects.requireNonNull(service, "Order service is required");
+        this.paymentOptions = List.copyOf(paymentOptions);
+        if (this.paymentOptions.isEmpty()) {
+            throw new IllegalArgumentException("At least one payment option is required");
+        }
+    }
 
     public void run() {
         System.out.println("Welcome to Food Ordering Simulator! Prices are in INR.");
@@ -32,7 +43,10 @@ public class FoodOrderingCli {
                         printItems(cart.items());
                         System.out.printf("Total: INR %.2f%n", cart.total());
                     }
-                    case "4" -> printOrder(checkout());
+                    case "4" -> {
+                        Order order = checkout();
+                        if (order != null) printOrder(order);
+                    }
                     case "5" -> findOrder();
                     case "0" -> { return; }
                     default -> System.out.println("Choose an option from the menu.");
@@ -66,11 +80,46 @@ public class FoodOrderingCli {
             throw new IllegalArgumentException("Your cart is empty");
         }
         DiscountStrategy discountStrategy = selectDiscountStrategy();
+        BigDecimal subtotal = cart.total();
+        BigDecimal discount = discountStrategy.calculateDiscount(subtotal);
+        if (discount == null || discount.signum() < 0 || discount.compareTo(subtotal) > 0) {
+            throw new IllegalArgumentException("Discount strategy returned an invalid discount");
+        }
+        BigDecimal amountToCharge = subtotal.subtract(discount);
         String customerName = readOptional("Customer name (optional): ");
         String contactPerson = readOptional("Contact person or phone (optional): ");
         String deliveryInstructions = readOptional("Delivery instructions (optional): ");
+
+        if (amountToCharge.signum() > 0) {
+            PaymentOption paymentOption = selectPaymentOption();
+            PaymentResult paymentResult = paymentOption.gateway().charge(amountToCharge);
+            if (paymentResult == null) {
+                throw new IllegalArgumentException("Payment gateway returned no result");
+            }
+            if (!paymentResult.approved()) {
+                System.out.println("Payment declined: " + paymentResult.message());
+                return null;
+            }
+            System.out.println("Payment approved: " + paymentResult.message());
+        } else {
+            System.out.println("No payment due; the discount covers the order total.");
+        }
+
         return service.placeOrder(cart, discountStrategy,
                 customerName, contactPerson, deliveryInstructions);
+    }
+
+    private PaymentOption selectPaymentOption() {
+        System.out.println("Payment method:");
+        for (int i = 0; i < paymentOptions.size(); i++) {
+            System.out.printf("%d. %s%n", i + 1, paymentOptions.get(i).name());
+        }
+        System.out.print("> ");
+        int choice = Integer.parseInt(input.nextLine().trim());
+        if (choice < 1 || choice > paymentOptions.size()) {
+            throw new IllegalArgumentException("Choose a listed payment method");
+        }
+        return paymentOptions.get(choice - 1);
     }
 
     private String readOptional(String prompt) {
