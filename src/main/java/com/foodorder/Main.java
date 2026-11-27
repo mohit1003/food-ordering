@@ -6,6 +6,7 @@ import com.foodorder.payment.MockCardProcessor;
 import com.foodorder.payment.MockWalletClient;
 import com.foodorder.payment.PaymentOption;
 import com.foodorder.payment.WalletProviderAdapter;
+import com.foodorder.service.CheckoutFacade;
 import com.foodorder.service.OrderService;
 
 import java.util.List;
@@ -17,6 +18,8 @@ public class Main {
                 new PaymentOption("Card", new CardProcessorAdapter(new MockCardProcessor(true))),
                 new PaymentOption("Wallet", new WalletProviderAdapter(new MockWalletClient(true)))
         );
-        new FoodOrderingCli(new OrderService(), paymentOptions).run();
+        OrderService orderService = new OrderService();
+        CheckoutFacade checkoutFacade = new CheckoutFacade(orderService);
+        new FoodOrderingCli(orderService, checkoutFacade, paymentOptions).run();
     }
 }

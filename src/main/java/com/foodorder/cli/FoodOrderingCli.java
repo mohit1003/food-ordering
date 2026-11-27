@@ -2,11 +2,12 @@ package com.foodorder.cli;
 
 import com.foodorder.model.*;
 import com.foodorder.payment.PaymentOption;
-import com.foodorder.payment.PaymentResult;
 import com.foodorder.pricing.DiscountStrategy;
 import com.foodorder.pricing.FlatDiscountStrategy;
 import com.foodorder.pricing.NoDiscountStrategy;
 import com.foodorder.pricing.PercentageDiscountStrategy;
+import com.foodorder.service.CheckoutFacade;
+import com.foodorder.service.CheckoutResult;
 import com.foodorder.service.OrderService;
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,12 +17,15 @@ import java.util.UUID;
 
 public class FoodOrderingCli {
     private final OrderService service;
+    private final CheckoutFacade checkoutFacade;
     private final List<PaymentOption> paymentOptions;
     private final Cart cart = new Cart();
     private final Scanner input = new Scanner(System.in);
 
-    public FoodOrderingCli(OrderService service, List<PaymentOption> paymentOptions) {
+    public FoodOrderingCli(OrderService service, CheckoutFacade checkoutFacade,
+                           List<PaymentOption> paymentOptions) {
         this.service = Objects.requireNonNull(service, "Order service is required");
+        this.checkoutFacade = Objects.requireNonNull(checkoutFacade, "Checkout facade is required");
         this.paymentOptions = List.copyOf(paymentOptions);
         if (this.paymentOptions.isEmpty()) {
             throw new IllegalArgumentException("At least one payment option is required");
@@ -80,33 +84,25 @@ public class FoodOrderingCli {
             throw new IllegalArgumentException("Your cart is empty");
         }
         DiscountStrategy discountStrategy = selectDiscountStrategy();
-        BigDecimal subtotal = cart.total();
-        BigDecimal discount = discountStrategy.calculateDiscount(subtotal);
-        if (discount == null || discount.signum() < 0 || discount.compareTo(subtotal) > 0) {
-            throw new IllegalArgumentException("Discount strategy returned an invalid discount");
-        }
-        BigDecimal amountToCharge = subtotal.subtract(discount);
         String customerName = readOptional("Customer name (optional): ");
         String contactPerson = readOptional("Contact person or phone (optional): ");
         String deliveryInstructions = readOptional("Delivery instructions (optional): ");
 
-        if (amountToCharge.signum() > 0) {
-            PaymentOption paymentOption = selectPaymentOption();
-            PaymentResult paymentResult = paymentOption.gateway().charge(amountToCharge);
-            if (paymentResult == null) {
-                throw new IllegalArgumentException("Payment gateway returned no result");
-            }
-            if (!paymentResult.approved()) {
-                System.out.println("Payment declined: " + paymentResult.message());
-                return null;
-            }
-            System.out.println("Payment approved: " + paymentResult.message());
-        } else {
-            System.out.println("No payment due; the discount covers the order total.");
-        }
+        PaymentOption paymentOption = selectPaymentOption();
 
-        return service.placeOrder(cart, discountStrategy,
-                customerName, contactPerson, deliveryInstructions);
+        CheckoutResult checkoutResult = checkoutFacade.checkout(
+                cart,
+                discountStrategy,
+                paymentOption.gateway(),
+                customerName,
+                contactPerson,
+                deliveryInstructions);
+        if (!checkoutResult.completed()) {
+            System.out.println("Checkout failed: " + checkoutResult.message());
+            return null;
+        }
+        System.out.println(checkoutResult.message());
+        return checkoutResult.order();
     }
 
     private PaymentOption selectPaymentOption() {
